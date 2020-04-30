@@ -6,7 +6,8 @@ const Person = require('./models/person')
 
 const app = express()
 
-morgan.token('post_data', function (req, res) { return req.method === 'POST' ? JSON.stringify(req.body) : '' })
+morgan.token('post_data', function (req) { return req.method === 'POST' ? JSON.stringify(req.body) : '' })
+
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :post_data'))
 
 app.use(express.json())
@@ -24,10 +25,10 @@ app.get('/api/persons', (request, response) => {
   Person.find({}).then(persons => {
     response.json(persons.map(p => p.toJSON()))
   })
-  
+
 })
 
-app.get('/info', (request, response, next ) => {
+app.get('/info', (request, response) => {
 
   Person.find({}).then(persons =>
     response.send(`Phonebook has info for ${persons.length} people <br> ${Date()}`)
@@ -37,7 +38,7 @@ app.get('/info', (request, response, next ) => {
 
 
 app.get('/api/persons/:id', (request, response, next) => {
-  
+
   Person.findById(request.params.id).then(person => {
     if (person){
       response.json(person)
@@ -54,7 +55,7 @@ app.get('/api/persons/:id', (request, response, next) => {
 
 app.delete('/api/persons/:id', (request, response, next) => {
 
-  Person.findByIdAndRemove(request.params.id).then(result => {
+  Person.findByIdAndRemove(request.params.id).then(() => {
     response.status(204).end()
   }).catch(error => {
     next(error)
@@ -90,8 +91,8 @@ app.post('/api/persons', (request, response, next) => {
   console.log(body.name)
   console.log(person.toJSON())
 
-  person.save().then(result => {
-    console.log(`Added ${person.name} number ${person.number} to phonebook`)
+  person.save().then(() => {
+    console.log(`Added ${person.name} number ${person.number} to phonebook`)
     response.json(person.toJSON())
   }).catch(error => next(error ))
 
