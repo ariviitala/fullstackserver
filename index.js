@@ -14,37 +14,45 @@ app.use(cors())
 app.use(express.static('build'))
 
 
+app.get('/', (req, res) => {
+  console.log(req.body)
+  res.send('<h1>Hello</h1>')
+})
 
 app.get('/api/persons', (request, response) => {
 
   Person.find({}).then(persons => {
     response.json(persons.map(p => p.toJSON()))
-  }).catch(error => {
-    next(error)
   })
+  
 })
 
-app.get('/api/persons/:id', (request, response) => {
-
-  Person.findById(request.params.id).then(person => {
-    response.json(person)
-  }).catch(error => {
-    next(error)
-  })
-})
-
-app.get('/info', (request, response) => {
+app.get('/info', (request, response, next ) => {
 
   Person.find({}).then(persons =>
     response.send(`Phonebook has info for ${persons.length} people <br> ${Date()}`)
-  ).catch(error => {
-    next(error)
-  })
+  )
 
 })
 
 
-app.delete('/api/persons/:id', (request, response) => {
+app.get('/api/persons/:id', (request, response, next) => {
+  
+  Person.findById(request.params.id).then(person => {
+    if (person){
+      response.json(person)
+    } else {
+      response.status(404).end()
+    }
+  }).catch(error => {
+    //console.log(error.name)
+    //response.status(400).end()
+    next(error)
+  })
+})
+
+
+app.delete('/api/persons/:id', (request, response, next) => {
 
   Person.findByIdAndRemove(request.params.id).then(result => {
     response.status(204).end()
@@ -53,7 +61,7 @@ app.delete('/api/persons/:id', (request, response) => {
   })
 })
 
-app.put('/api/persons/:id', (request, response) => {
+app.put('/api/persons/:id', (request, response, next) => {
 
   const id = request.params.id
 
@@ -66,12 +74,11 @@ app.put('/api/persons/:id', (request, response) => {
     response.json(result.toJSON())
   }).catch(error => {
     next(error)
-  }).catch(error => {
-    next(error)
   })
+
 })
 
-app.post('/api/persons', (request, response) => {
+app.post('/api/persons', (request, response, next) => {
 
   const body = request.body
 
@@ -108,16 +115,11 @@ app.post('/api/persons', (request, response) => {
   person.save().then(result => {
     console.log(`Added ${person.name} number ${person.number} to phonebook`)
     response.json(person.toJSON())
-  }).catch(error => {
-    next(error)
   })
 
 })
 
-app.get('/', (req, res) => {
-  console.log(req.body)
-  res.send('<h1>Hello</h1>')
-})
+
 
 const unknownEndpoint = (request, response) => {
   response.status(404).send({ error: 'unknown endpoint' })
@@ -126,9 +128,10 @@ const unknownEndpoint = (request, response) => {
 app.use(unknownEndpoint)
 
 const errorHandler = (error, request, response, next) => {
-  console.error(error.message)
+  //console.log(error)
+  //console.error(error)
 
-  if (error.name === 'CastError' && error.kind == 'ObjectId') {
+  if (error.name === 'CastError') {
     return response.status(400).send({ error: 'malformatted id' })
   }
 
