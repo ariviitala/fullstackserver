@@ -82,28 +82,6 @@ app.post('/api/persons', (request, response, next) => {
 
   const body = request.body
 
-  console.log(body)
-
-  if (!body.name) {
-    return response.status(400).json({
-      error: 'name missing'
-    })
-  }
-
-  if (!body.number) {
-    return response.status(400).json({
-      error: 'number missing'
-    })
-  }
-
-  Person.find({ name: { $eq: body.name } }).then(result => {
-    if (!result) {
-      return response.status(400).json({
-        error: 'name must be unique'
-      })
-    }
-  })
-
   const person = new Person({
     name: body.name,
     number: body.number
@@ -115,7 +93,7 @@ app.post('/api/persons', (request, response, next) => {
   person.save().then(result => {
     console.log(`Added ${person.name} number ${person.number} to phonebook`)
     response.json(person.toJSON())
-  })
+  }).catch(error => next(error ))
 
 })
 
@@ -129,10 +107,12 @@ app.use(unknownEndpoint)
 
 const errorHandler = (error, request, response, next) => {
   //console.log(error)
-  //console.error(error)
+  console.error(error.message)
 
   if (error.name === 'CastError') {
     return response.status(400).send({ error: 'malformatted id' })
+  } else if (error.name === 'ValidationError'){
+    return response.status(400).json({ error: error.message })
   }
 
   next(error)
